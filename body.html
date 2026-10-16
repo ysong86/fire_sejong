@@ -1,0 +1,678 @@
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi .k{font-size:12px;color:var(--ink2);font-weight:600}
+.kpi .v{font-family:var(--mono);font-size:28px;font-weight:500;line-height:1.15;margin-top:4px}
+.kpi .v small{font-size:13px;color:var(--ink3);font-family:var(--sans);margin-left:3px}
+.kpi .d{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.kpi .dl{font-family:var(--mono);font-size:12px;font-weight:600}
+.kpi .dl.up{color:var(--good)} .kpi .dl.dn{color:var(--bad)}
+section{margin-top:30px}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+#map{height:660px;width:100%}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line2)}
+.ctl .lab{font-size:11.5px;color:var(--ink3);font-weight:600;margin-right:2px}
+.ctl select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:var(--panel);color:var(--ink)}
+.side{display:flex;flex-direction:column;gap:12px}
+.side .card{padding:12px 14px}
+.side h3{font-size:13.5px}
+.wrow{display:grid;grid-template-columns:92px 1fr 34px;gap:6px;align-items:center;font-size:12.5px;margin:4px 0}
+.wrow input{width:100%;accent-color:var(--accent)}
+.wrow .wv{font-family:var(--mono);text-align:right;color:var(--ink2)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.legend .sw{display:inline-block;width:14px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.08)}
+.biv{display:grid;grid-template-columns:auto repeat(3,22px);grid-auto-rows:18px;gap:2px;align-items:center;font-size:11px;color:var(--ink3)}
+.biv i{display:block;width:22px;height:18px;border-radius:2px}
+.virt{display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.virt .vi{display:flex;justify-content:space-between;align-items:center;border:1px dashed var(--accent);border-radius:6px;padding:4px 8px}
+.virt .vi button{border:0;background:none;color:var(--bad);cursor:pointer;font-size:12px}
+.btn.on{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+.hint{font-size:12px;color:var(--ink3)}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{text-align:left;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--line);padding:6px 8px;white-space:nowrap;cursor:pointer;user-select:none}
+table.t th.r,table.t td.r{text-align:right}
+table.t td{border-bottom:1px solid var(--line2);padding:5px 8px;font-variant-numeric:tabular-nums}
+table.t td.r{font-family:var(--mono)}
+table.t tr.clk{cursor:pointer}
+table.t tr.clk:hover td{background:var(--panel2)}
+table.t th.sorted::after{content:" ▾";color:var(--accent)}
+.bar{display:inline-block;height:8px;border-radius:2px;background:var(--accent);vertical-align:middle;margin-right:6px}
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
+.scroll-x{overflow-x:auto}
+.method p{margin:0 0 10px;color:var(--ink2);font-size:13px;line-height:1.7}
+.method h4{margin:16px 0 6px;font-size:13.5px}
+.method table{margin:4px 0 12px}
+.method li{color:var(--ink2);font-size:13px;margin-bottom:4px}
+.station-mk{background:#B03A3A;color:#fff;font:700 10px/1 var(--mono);padding:3px 4px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap}
+.station-mk.post{background:#7A4B12}
+.station-mk.virt{background:#1D5C7C;border-style:dashed}
+.station-mk.off{opacity:.35}
+.maplibregl-popup-content{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans);font-size:12.5px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.maplibregl-popup-tip{border-top-color:var(--panel)!important;border-bottom-color:var(--panel)!important}
+.pop .tt{font-weight:700;font-size:13px;margin-bottom:4px}
+.pop table{border-collapse:collapse}
+.pop td{padding:1px 10px 1px 0;font-variant-numeric:tabular-nums}
+.pop td.r{text-align:right;font-family:var(--mono)}
+.pop .sub{color:var(--ink3);font-size:11.5px;margin-top:4px}
+.loading{position:absolute;inset:auto 12px 12px auto;background:var(--ink);color:var(--panel);font-size:12px;padding:4px 10px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.loading.on{opacity:.9}
+.find{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px}
+.find h3{font-size:14px;margin-bottom:4px}
+.find p{margin:0;color:var(--ink2);font-size:13px}
+.fgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:1180px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mapgrid,.two{grid-template-columns:1fr}.fgrid{grid-template-columns:1fr}}
+@media (max-width:560px){.kpis{grid-template-columns:1fr}#map{height:520px}}
+</style>
+
+<script src="https://ysong86.github.io/nav.js" data-site="fire"></script>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">세종연구원 · 지역안전지수 화재 분야</div>
+    <h1>세종 화재안전 상황판</h1>
+    <div class="sub">119안전센터에서 건물까지 소방차가 실제 도로 속도로 몇 분 만에 닿는지, 그리고 어떤 건물이 불이 났을 때 더 위험한지를 함께 봅니다. 위험은 높은데 도착이 늦은 곳이 정책 우선순위입니다.</div>
+  </div>
+  <div class="hdr-side">
+    <div class="hdr-right">
+      <span class="small muted" id="stamp"></span>
+      <button class="btn" id="theme" type="button">화면 밝기</button>
+    </div>
+    <div class="small"><span class="muted">다른 상황판은</span> <a href="https://ysong86.github.io/" target="_top">세종 이슈 대시보드에서 모아보기 →</a></div>
+  </div>
+</header>
+
+<div class="notice" id="notice"><b>연구진의 추정입니다.</b> 화재 발생 지점 좌표는 공개되지 않습니다(국가화재정보시스템·소방청 자료는 시군구 단위 통계까지만 제공). 그래서 이 화면의 건물 화재위험은 실제 화재 이력이 아니라 건물 구조·용도·노후도·거주자 특성으로 매긴 <b>연구진의 추정 점수</b>이고, 도달시간도 도로망 모형으로 계산한 추정값이라 실제 출동 기록과 다를 수 있습니다. 읍면동 단위 화재 이력은 세종소방본부 정보공개청구로 받아 다음 단계에서 검증할 계획입니다.</div>
+
+<div class="kpis" id="kpis"></div>
+
+<section>
+  <div class="sec-h"><h2>지도로 보기</h2><span class="note" id="mapnote"></span></div>
+  <div class="mapgrid">
+    <div class="mapbox">
+      <div class="ctl">
+        <span><span class="lab">지도</span><span class="chips" id="modes"></span></span>
+        <span><span class="lab">시간대</span><select id="slot"></select></span>
+      </div>
+      <div class="ctl">
+        <span class="chips" id="overlays"></span>
+        <button class="btn" id="addv" type="button">＋ 가상 119지역대 놓기</button>
+      </div>
+      <div id="map"></div>
+      <div class="loading" id="loading">계산 중…</div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="side">
+      <div class="card" id="info"><h3>읽는 법</h3><div class="hint" id="infobody"></div></div>
+      <div class="card">
+        <h3>건물 위험 점수 가중치</h3>
+        <div class="hint" style="margin-bottom:4px">다섯 요소(각 0~100점)의 가중 평균입니다. 바꾸면 위험 지도·이변량 지도·지표가 바로 다시 계산됩니다.</div>
+        <div id="weights"></div>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="card">
+        <h3>가상 119지역대</h3>
+        <div class="hint" id="vhint">[가상 119지역대 놓기]를 누른 뒤 지도를 누르면 그 자리에 출동 거점이 생긴 것으로 보고 도달시간을 다시 계산합니다. 여러 곳을 놓을 수 있습니다.</div>
+        <div class="virt" id="virt"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>시간대별 비교</h2><span class="note">같은 출동 거점으로, ITS 실측 속도를 시간대별로 바꿔 넣었을 때. ‘제한속도’ 행은 실측 없이 법정 제한속도로만 달린다고 가정한 값입니다.</span></div>
+  <div class="card scroll-x"><table class="t" id="slottab"></table></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>읍면동별 진단</h2><span class="note">행을 누르면 지도가 그 읍면동으로 갑니다. 머리글을 누르면 정렬됩니다. 현재 지도에서 고른 시간대·출동 거점 기준.</span></div>
+  <div class="card scroll-x"><table class="t" id="dongtab"></table></div>
+</section>
+
+<section>
+  <div class="two">
+    <div>
+      <div class="sec-h"><h2>출동 거점별 담당</h2><span class="note">가장 먼저 닿는 거점 기준(관할 구역이 아니라 도로상 최단시간)</span></div>
+      <div class="card scroll-x"><table class="t" id="sttab"></table></div>
+    </div>
+    <div>
+      <div class="sec-h"><h2>눈여겨볼 점</h2></div>
+      <div class="side" id="finds"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>자료와 방법</h2><span class="note">이 화면을 만들 때 쓴 자료, 가정, 한계를 모두 적었습니다.</span></div>
+  <div class="card method" id="method"></div>
+</section>
+
+<footer>
+  <p>지도: OpenStreetMap 기여자(ODbL) 행정경계·배경지도(공개 주소에서는 브이월드 배경지도). 도로망: 국가교통정보센터 전국표준노드링크. 건물: 브이월드 GIS건물통합정보·국토교통부 건축HUB 건축물대장.</p>
+  <p class="aside">연구원의 공식 업무가 아닌, 참여 연구자들의 호기심과 재미에서 시작한 작업입니다. 결과물은 참고용으로 봐 주세요.</p>
+  <p class="credit">제작: 세종연구원 연구모임<span class="names">김성표, 안용준, 김흥주, 남영식, 이재민, 이자은, 송양호</span></p>
+  <div class="visitors"><img class="hitsbadge" src="https://hits.sh/ysong86.github.io/fire_sejong.svg?view=today-total&amp;style=flat-square&amp;label=%EC%A1%B0%ED%9A%8C%EC%88%98&amp;color=1d5c7c&amp;labelColor=64748b" alt="조회수 오늘/전체" height="20" decoding="async" onerror="this.parentNode.style.display='none'"><span class="vsub">오늘 / 전체</span></div>
+</footer>
+</div>
+
+<script type="application/json" id="data">/*__DATA__*/null</script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+(function(){
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtN = n => n == null || !isFinite(n) ? "—" : Math.round(n).toLocaleString("ko-KR");
+const fmt1 = n => n == null || !isFinite(n) ? "—" : (Math.round(n * 10) / 10).toLocaleString("ko-KR", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const mins = s => s / 60;
+const store = {get(k,d){try{const v=localStorage.getItem("fs:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+               set(k,v){try{localStorage.setItem("fs:"+k,JSON.stringify(v))}catch(e){}}};
+const X0 = D.origin[0], Y0 = D.origin[1], KX = D.kx, KY = D.ky, CELL = D.cell;
+const GOLD = 7;   // 분 — 소방 골든타임(신고~도착 7분)을 주행시간 기준선으로 쓴다
+const SLOT_NAME = {limit: "제한속도(실측 없음)", night: "심야(23~05시)", am: "출근(07~09시)", pm: "퇴근(17~19시)", day: "평시(그 밖 시간)"};
+
+/* ── 테마 ── */
+(function(){
+  const saved = store.get("theme", null);
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+  $("#theme").addEventListener("click", () => {
+    const nxt = isDark() ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", nxt); store.set("theme", nxt); setBase();
+  });
+})();
+function isDark(){ return (document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark"; }
+$("#stamp").textContent = "자료 정리 " + D.built;
+
+/* ── 건물 열 ── */
+const B = D.B, NB = B.x.length;
+const BX = new Float64Array(NB), BY = new Float64Array(NB);
+for (let i = 0; i < NB; i++) { BX[i] = X0 + B.x[i] / 1e5; BY[i] = Y0 + B.y[i] / 1e5; }
+const COMP = [B.c0, B.c1, B.c2, B.c3, B.c4];
+const COMP_NAME = ["용도", "노후도", "구조", "거주자 취약", "규모·높이"];
+const STRUCTS = D.structs;
+const POP = Float64Array.from(B.pp, v => v / 10);
+const TOTPOP = POP.reduce((a, b) => a + b, 0);
+const OLD_HOUSE = Uint8Array.from({length: NB}, (_, i) => B.u[i] === "01" && B.yr[i] > 0 && B.yr[i] < 2012 ? 1 : 0);
+
+/* ── 도로망(방향 그래프, CSR) ── */
+const NN = D.NX.length, NE = D.EF.length, NS = D.net.slots.length;
+const OFF = new Int32Array(NN + 1);
+for (let e = 0; e < NE; e++) OFF[D.EF[e] + 1]++;
+for (let i = 0; i < NN; i++) OFF[i + 1] += OFF[i];
+const ADJ = new Int32Array(NE), W = Array.from({length: NS}, () => new Int32Array(NE));
+{ const fill = OFF.slice(0, NN);
+  for (let e = 0; e < NE; e++) { const p = fill[D.EF[e]]++; ADJ[p] = D.ET[e]; for (let s = 0; s < NS; s++) W[s][p] = D.EW[s][e]; } }
+const NLON = i => X0 + D.NX[i] / 1e5, NLAT = i => Y0 + D.NY[i] / 1e5;
+
+function dijkstra(src, w){
+  const dist = new Float64Array(NN).fill(Infinity);
+  const hk = new Float64Array(NE + 8), hv = new Int32Array(NE + 8); let hn = 0;
+  const push = (k, v) => { let i = hn++; while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= k) break; hk[i] = hk[p]; hv[i] = hv[p]; i = p; } hk[i] = k; hv[i] = v; };
+  const pop = () => { const v = hv[0], k = hk[0]; const lk = hk[--hn], lv = hv[hn]; let i = 0;
+    while (true) { let c = 2 * i + 1; if (c >= hn) break; if (c + 1 < hn && hk[c + 1] < hk[c]) c++; if (hk[c] >= lk) break; hk[i] = hk[c]; hv[i] = hv[c]; i = c; }
+    hk[i] = lk; hv[i] = lv; return [k, v]; };
+  dist[src] = 0; push(0, src);
+  while (hn) {
+    const [d, u] = pop(); if (d > dist[u]) continue;
+    for (let p = OFF[u]; p < OFF[u + 1]; p++) { const v = ADJ[p], nd = d + w[p]; if (nd < dist[v]) { dist[v] = nd; if (hn < hk.length) push(nd, v); } }
+  }
+  return dist;
+}
+function nearestNode(lon, lat){
+  let best = -1, bd = Infinity;
+  for (let i = 0; i < NN; i++) { if (D.NC[i] < 0) continue; const dx = (NLON(i) - lon) * KX, dy = (NLAT(i) - lat) * KY, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = i; } }
+  return [best, Math.sqrt(bd)];
+}
+
+/* ── 상태 ── */
+const STATIONS = D.stations.map((s, i) => ({...s, id: "s" + i}));
+const virtuals = [];
+const S = {
+  mode: store.get("mode", "arrive"),
+  slot: D.net.slots.includes(store.get("slot", "")) ? store.get("slot") : (D.net.slots.find(s => s !== "limit") || "limit"),
+  posts: store.get("posts", false), cells: true, narrow: false, dongs: true, stations: true,
+  w: store.get("w", [30, 25, 20, 15, 10]),
+};
+const distCache = new Map();
+function distFor(st, slotIx){
+  const k = slotIx + "|" + st.node;
+  if (!distCache.has(k)) distCache.set(k, dijkstra(st.node, W[slotIx]));
+  return distCache.get(k);
+}
+function activeStations(){ return STATIONS.filter(s => s.kind === "center" || (S.posts && s.kind === "post")).concat(virtuals); }
+
+/* 도달: 노드별 1·2위(서로 다른 거점) → 건물 */
+function arrivals(slot, sts){
+  const si = D.net.slots.indexOf(slot);
+  const n1 = new Float64Array(NN).fill(Infinity), n2 = new Float64Array(NN).fill(Infinity), w1 = new Int16Array(NN).fill(-1);
+  sts.forEach((st, k) => {
+    const d = distFor(st, si);
+    for (let i = 0; i < NN; i++) { const v = d[i];
+      if (v < n1[i]) { n2[i] = n1[i]; n1[i] = v; w1[i] = k; } else if (v < n2[i]) n2[i] = v; }
+  });
+  const a1 = new Float64Array(NB), a2 = new Float64Array(NB), who = new Int16Array(NB);
+  for (let i = 0; i < NB; i++) { const n = B.n[i]; a1[i] = n1[n] + B.ac[i]; a2[i] = n2[n] + B.ac[i]; who[i] = w1[n]; }
+  return {a1, a2, who, sts};
+}
+
+/* 위험 점수 */
+let RISK = new Float64Array(NB), RQ = [0, 0, 0, 0], P80 = 0;
+function computeRisk(){
+  const w = S.w, sw = w.reduce((a, b) => a + b, 0) || 1;
+  for (let i = 0; i < NB; i++) { let r = 0; for (let k = 0; k < 5; k++) r += w[k] * COMP[k][i]; RISK[i] = r / sw; }
+  const s = Float64Array.from(RISK).sort();
+  RQ = [0.2, 0.4, 0.6, 0.8].map(q => s[Math.floor(q * (NB - 1))]);
+  P80 = RQ[3];
+}
+const riskClass = r => r >= RQ[3] ? 4 : r >= RQ[2] ? 3 : r >= RQ[1] ? 2 : r >= RQ[0] ? 1 : 0;
+
+/* 지표 */
+function kpis(A){
+  let p5 = 0, p7 = 0, pp2 = 0, late = 0, hiLate = 0, sumT = 0, sumP = 0, nOk = 0;
+  for (let i = 0; i < NB; i++) {
+    const t = mins(A.a1[i]); if (!isFinite(t)) continue; nOk++;
+    const p = POP[i]; sumT += t * p; sumP += p;
+    if (t <= 5) p5 += p; if (t <= GOLD) p7 += p;
+    if (mins(A.a2[i]) > 10) pp2 += p;
+    if (t > GOLD) { late++; if (RISK[i] >= P80) hiLate++; }
+  }
+  return {p5: p5 / TOTPOP * 100, p7: p7 / TOTPOP * 100, p2: pp2 / TOTPOP * 100, late, hiLate, avg: sumT / sumP};
+}
+
+/* ── 격자 ── */
+const CELLS = new Map();
+for (let i = 0; i < NB; i++) { const k = B.gx[i] * 10000 + B.gy[i]; let c = CELLS.get(k); if (!c) { c = []; CELLS.set(k, c); } c.push(i); }
+const CKEYS = [...CELLS.keys()];
+function cellPoly(k){
+  const gx = Math.floor(k / 10000), gy = k % 10000;
+  const x0 = X0 + gx * CELL / KX, y0 = Y0 + gy * CELL / KY, x1 = x0 + CELL / KX, y1 = y0 + CELL / KY;
+  return [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
+}
+const median = a => { if (!a.length) return Infinity; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+let CR = [0, 0];
+function cellStats(A, Abase){
+  const out = [], risks = [];
+  for (const k of CKEYS) {
+    const ix = CELLS.get(k);
+    const t1 = median(ix.map(i => A.a1[i])), t2 = median(ix.map(i => A.a2[i]));
+    const rs = ix.map(i => RISK[i]).sort((a, b) => b - a), top = rs.slice(0, Math.max(1, Math.ceil(rs.length / 4)));
+    const risk = top.reduce((a, b) => a + b, 0) / top.length;
+    const pop = ix.reduce((a, i) => a + POP[i], 0);
+    const diff = Abase ? t1 - median(ix.map(i => Abase.a1[i])) : 0;
+    out.push({k, t1: mins(t1), t2: mins(t2), risk, n: ix.length, pop, diff: mins(diff)});
+    risks.push(risk);
+  }
+  risks.sort((a, b) => a - b);
+  CR = [risks[Math.floor(risks.length / 3)], risks[Math.floor(risks.length * 2 / 3)]];
+  return out;
+}
+
+/* ── 색 ── */
+const T_BRK = [3, 5, 7, 10, 15], T_COL = ["#1a9850", "#91cf60", "#d9ef8b", "#fee08b", "#fc8d59", "#d73027"];
+const tClass = t => !isFinite(t) ? 5 : T_BRK.findIndex(b => t <= b) < 0 ? 5 : T_BRK.findIndex(b => t <= b);
+const R_COL = ["#fff5eb", "#fdd0a2", "#fd8d3c", "#d94801", "#7f2704"];
+const BIV = [["#e8e8e8", "#e4acac", "#c85a5a"], ["#b0d5df", "#ad9ea5", "#985356"], ["#64acbe", "#627f8c", "#574249"]];
+const bivT = t => t <= 5 ? 0 : t <= GOLD ? 1 : 2;
+const bivR = r => r >= CR[1] ? 2 : r >= CR[0] ? 1 : 0;
+const DF_BRK = [0.5, 1, 2, 3], DF_COL = ["#f2f0f7", "#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"];
+const dClass = d => { const i = DF_BRK.findIndex(b => d <= b); return i < 0 ? 4 : i; };
+
+/* ── 지도 ── */
+const MODES = [
+  ["arrive", "1차 도착시간"], ["second", "2차 출동"], ["risk", "건물 화재위험"], ["biv", "위험 × 도달"],
+].concat(D.net.slots.filter(s => s !== "limit").length >= 1 ? [["diff", "시간대 차이"]] : []);
+const VW = location.hostname === "ysong86.github.io" && D.vworld;
+function baseTiles(){
+  if (VW) return {tiles: [`https://api.vworld.kr/req/wmts/1.0.0/${D.vworld}/${isDark() ? "midnight" : "Base"}/{z}/{y}/{x}.png`], attribution: "© 브이월드", maxzoom: 19};
+  return {tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], attribution: "© OpenStreetMap contributors", maxzoom: 19};
+}
+function baseStyle(){
+  const t = baseTiles();
+  const dark = isDark() && !VW;
+  return {version: 8, sources: {base: {type: "raster", tileSize: 256, ...t}},
+    layers: [{id: "bg", type: "background", paint: {"background-color": isDark() ? "#0E1619" : "#F2F4F1"}},
+             {id: "base", type: "raster", source: "base", paint: dark ? {"raster-saturation": -0.9, "raster-brightness-max": 0.32, "raster-contrast": 0.1} : {"raster-saturation": -0.35, "raster-opacity": 0.85}}]};
+}
+const map = new maplibregl.Map({container: "map", style: baseStyle(), center: [127.27, 36.56], zoom: 10.2, attributionControl: {compact: true}, maxZoom: 18});
+window.__fire = {map, S};
+map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
+map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-left");
+let ready = false;
+const outlineFC = {type: "FeatureCollection", features: [{type: "Feature", geometry: {type: "MultiPolygon", coordinates: D.outline.map(r => [r])}}]};
+const dongFC = {type: "FeatureCollection", features: D.dongs.map((d, i) => ({type: "Feature", id: i, properties: {name: d.name}, geometry: {type: "MultiPolygon", coordinates: D.dpoly[i].map(r => [r])}}))};
+const narrowFC = {type: "FeatureCollection", features: D.narrow.map(l => ({type: "Feature", geometry: {type: "LineString", coordinates: l.map(p => [X0 + p[0] / 1e5, Y0 + p[1] / 1e5])}}))};
+const cellGeo = CKEYS.map(cellPoly);
+function addLayers(){
+  map.addSource("cells", {type: "geojson", data: {type: "FeatureCollection", features: []}});
+  map.addSource("bld", {type: "geojson", data: {type: "FeatureCollection", features: []}});
+  map.addSource("outline", {type: "geojson", data: outlineFC});
+  map.addSource("dongs", {type: "geojson", data: dongFC});
+  map.addSource("narrow", {type: "geojson", data: narrowFC});
+  map.addLayer({id: "mask", type: "line", source: "outline", paint: {"line-color": isDark() ? "#D7E3E1" : "#1C2B31", "line-width": 1.6}});
+  map.addLayer({id: "cells", type: "fill", source: "cells", paint: {"fill-color": ["get", "col"], "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.82, 14, 0.55, 16, 0.25]}});
+  map.addLayer({id: "prio", type: "line", source: "cells", filter: ["==", ["get", "p"], 1], paint: {"line-color": "#ff4d4d", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 14, 2]}});
+  map.addLayer({id: "dongs", type: "line", source: "dongs", paint: {"line-color": isDark() ? "#A4B4B4" : "#4B5B62", "line-width": 0.7, "line-dasharray": [3, 2], "line-opacity": 0.8}});
+  map.addLayer({id: "narrow", type: "line", source: "narrow", layout: {visibility: "none"}, paint: {"line-color": "#E0A64A", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 15, 2.6]}});
+  map.addLayer({id: "bld", type: "circle", source: "bld", minzoom: 12.5, paint: {
+    "circle-color": ["get", "col"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 1.6, 15, 3.4, 17, 6],
+    "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 13, 0, 15, 0.6], "circle-stroke-color": isDark() ? "#0E1619" : "#ffffff"}});
+  ready = true; drawMap();
+}
+map.on("load", addLayers);
+function setBase(){
+  if (!ready) return;
+  const center = map.getCenter(), zoom = map.getZoom();
+  ready = false;
+  map.setStyle(baseStyle(), {diff: false});
+  map.once("styledata", () => { map.jumpTo({center, zoom}); addLayers(); });
+}
+
+/* 거점 표시 */
+let markers = [];
+function drawStations(A){
+  markers.forEach(m => m.remove()); markers = [];
+  const act = new Set(activeStations().map(s => s.id));
+  STATIONS.concat(virtuals).forEach(s => {
+    const el = document.createElement("div");
+    el.className = "station-mk " + (s.kind === "post" ? "post" : s.kind === "virt" ? "virt" : "") + (act.has(s.id) ? "" : " off");
+    el.textContent = s.kind === "virt" ? "가상" : "119";
+    el.title = s.name;
+    el.addEventListener("click", ev => { ev.stopPropagation(); showStation(s, A); });
+    markers.push(new maplibregl.Marker({element: el}).setLngLat([s.lon, s.lat]).addTo(map));
+  });
+}
+
+/* ── 계산 → 그리기 ── */
+let CUR = null, BASE = null, CS = [];
+function compute(){
+  const sts = activeStations();
+  CUR = arrivals(S.slot, sts);
+  const baseSts = STATIONS.filter(s => s.kind === "center" || (S.posts && s.kind === "post"));
+  BASE = virtuals.length ? arrivals(S.slot, baseSts) : CUR;
+  let ref = null;
+  if (S.mode === "diff") { ref = arrivals("night" in SLOT_NAME && D.net.slots.includes("night") ? "night" : "limit", sts); }
+  CS = cellStats(CUR, ref);
+}
+function render(){
+  $("#loading").classList.add("on");
+  setTimeout(() => {
+    compute();
+    drawMap();
+    legend(); kpiRow(); dongTable(); stationTable(); info(); findings();
+    $("#loading").classList.remove("on");
+  }, 20);
+}
+function drawMap(){
+  if (!ready || !CUR) return;
+  const feats = [];
+  CS.forEach((c, i) => {
+    let col;
+    if (S.mode === "arrive") col = T_COL[tClass(c.t1)];
+    else if (S.mode === "second") col = T_COL[tClass(c.t2)];
+    else if (S.mode === "risk") col = R_COL[riskClass(c.risk)];
+    else if (S.mode === "biv") col = BIV[bivT(c.t1)][bivR(c.risk)];
+    else col = DF_COL[dClass(c.diff)];
+    const p = S.mode === "biv" && bivT(c.t1) === 2 && bivR(c.risk) === 2 ? 1 : 0;
+    feats.push({type: "Feature", id: i, properties: {col, i, p}, geometry: {type: "Polygon", coordinates: cellGeo[i]}});
+  });
+  map.getSource("cells").setData({type: "FeatureCollection", features: feats});
+  const bf = [];
+  for (let i = 0; i < NB; i++) {
+    const t = mins(CUR.a1[i]);
+    const col = S.mode === "risk" ? R_COL[riskClass(RISK[i])]
+              : S.mode === "biv" ? BIV[bivT(t)][RISK[i] >= CR[1] ? 2 : RISK[i] >= CR[0] ? 1 : 0]
+              : S.mode === "second" ? T_COL[tClass(mins(CUR.a2[i]))] : T_COL[tClass(t)];
+    bf.push({type: "Feature", properties: {i, col}, geometry: {type: "Point", coordinates: [BX[i], BY[i]]}});
+  }
+  map.getSource("bld").setData({type: "FeatureCollection", features: bf});
+  map.setLayoutProperty("cells", "visibility", S.cells ? "visible" : "none");
+  map.setLayoutProperty("prio", "visibility", S.cells ? "visible" : "none");
+  map.setLayoutProperty("narrow", "visibility", S.narrow ? "visible" : "none");
+  map.setLayoutProperty("dongs", "visibility", S.dongs ? "visible" : "none");
+  map.setLayoutProperty("bld", "visibility", S.mode === "diff" ? "none" : "visible");
+  drawStations(CUR);
+}
+
+/* ── 범례·설명 ── */
+function legend(){
+  let h = "";
+  if (S.mode === "arrive" || S.mode === "second") {
+    const lab = ["3분 이내", "3~5분", "5~7분", "7~10분", "10~15분", "15분 넘음"];
+    h = `<span class="muted">${S.mode === "arrive" ? "가장 가까운 거점의 주행시간" : "두 번째로 가까운 거점의 주행시간"}</span>` + lab.map((l, i) => `<span class="lg-item"><span class="sw" style="background:${T_COL[i]}"></span>${l}</span>`).join("");
+  } else if (S.mode === "risk") {
+    h = `<span class="muted">건물 위험 점수(5분위)</span>` + ["하위 20%", "", "", "", "상위 20%"].map((l, i) => `<span class="lg-item"><span class="sw" style="background:${R_COL[i]}"></span>${l || ((i * 20) + "~" + (i * 20 + 20) + "%")}</span>`).join("") + `<span class="muted">격자는 격자 안 건물 위험 점수 상위 1/4 평균</span>`;
+  } else if (S.mode === "biv") {
+    h = `<div class="biv"><span></span><span>위험↓</span><span></span><span>위험↑</span>` +
+      ["5분 이내", "5~7분", "7분 넘음"].map((l, t) => `<span>${l}</span>` + [0, 1, 2].map(r => `<i style="background:${BIV[t][r]}"></i>`).join("")).join("") + `</div>
+      <span class="lg-item"><span class="sw" style="background:${BIV[2][2]};border:2px solid #ff4d4d"></span>우선 대상(위험 높음·7분 넘음)</span>
+      <span class="muted">격자 위험을 3분위로(낮음·중간·높음), 도착시간을 골든타임 기준으로 나눴습니다.</span>`;
+  } else {
+    h = `<span class="muted">${esc(SLOT_NAME[S.slot])} − ${D.net.slots.includes("night") ? "심야" : "제한속도"} 기준 1차 도착시간 증가</span>` + ["0.5분 이내", "0.5~1분", "1~2분", "2~3분", "3분 넘게 늦어짐"].map((l, i) => `<span class="lg-item"><span class="sw" style="background:${DF_COL[i]}"></span>${l}</span>`).join("");
+  }
+  h += `<span class="lg-item"><span class="station-mk" style="cursor:default">119</span>119안전센터</span>`;
+  if (S.posts) h += `<span class="lg-item"><span class="station-mk post" style="cursor:default">119</span>119지역대(OSM)</span>`;
+  if (S.narrow) h += `<span class="lg-item"><span class="sw" style="background:#E0A64A;height:3px"></span>1차로 시군도</span>`;
+  $("#legend").innerHTML = h;
+}
+const INFO = {
+  arrive: "250m 격자마다 그 안 건물까지 <b>가장 가까운 119 거점</b>에서 출발한 소방차 주행시간(중앙값)입니다. 신고 접수·출동 준비 시간은 빠져 있으니, 골든타임 7분을 맞추려면 주행시간은 그보다 짧아야 합니다. 확대하면 건물 하나하나가 점으로 보이고, 누르면 자세한 값이 나옵니다.",
+  second: "가장 가까운 거점이 다른 현장에 나가 있을 때 <b>두 번째로 가까운 거점</b>에서 오는 시간입니다. 1차 도착은 빠른데 2차가 크게 늦은 곳은 동시 다발 화재·대형 화재 때 얇은 커버가 됩니다.",
+  risk: "건물마다 용도·노후도·구조·거주자 취약·규모를 0~100점으로 매기고 오른쪽 가중치로 합친 <b>추정 위험 점수</b>입니다. 실제 화재 이력이 아닙니다. 가중치를 바꾸면 바로 다시 칠해집니다.",
+  biv: "위험(가로)과 도착시간(세로)을 한 색으로 겹친 <b>이변량 지도</b>입니다. 빨간 테두리 칸이 위험은 높은데 늦게 닿는 곳 — 신규 거점·주택용 소방시설 보급·화재안전 점검의 우선 대상입니다.",
+  diff: "같은 거점이라도 <b>시간대에 따라</b> 길이 막히면 늦어집니다. 고른 시간대의 1차 도착시간이 심야(막힘 없을 때)보다 얼마나 늘었는지를 보여줍니다.",
+};
+function info(){ $("#infobody").innerHTML = INFO[S.mode]; $("#mapnote").textContent = SLOT_NAME[S.slot] + " · 출동 거점 " + activeStations().length + "곳" + (virtuals.length ? `(가상 ${virtuals.length})` : ""); }
+
+/* ── 지표 줄 ── */
+function kpiRow(){
+  const k = kpis(CUR), b = virtuals.length ? kpis(BASE) : null;
+  const dl = (v, bv, good, unit = "%p") => b == null ? "" : (() => { const d = v - bv; if (Math.abs(d) < 0.05) return ""; const up = good ? d > 0 : d < 0; return ` <span class="dl ${up ? "up" : "dn"}">${d > 0 ? "+" : ""}${unit === "동" ? fmtN(d) : fmt1(d)}${unit}</span>`; })();
+  $("#kpis").innerHTML = [
+    ["5분 안 도착 인구", fmt1(k.p5) + "<small>%</small>" + dl(k.p5, b && b.p5, true), "주민등록 인구를 주거 건물에 나눠 계산"],
+    ["7분 안 도착 인구", fmt1(k.p7) + "<small>%</small>" + dl(k.p7, b && b.p7, true), "주행시간 7분 = 골든타임 기준선"],
+    ["7분 넘게 걸리는 건물", fmtN(k.late) + "<small>동</small>" + dl(k.late, b && b.late, false, "동"), "전체 " + fmtN(NB) + "동 중"],
+    ["그중 고위험 건물", fmtN(k.hiLate) + "<small>동</small>" + dl(k.hiLate, b && b.hiLate, false, "동"), "위험 점수 상위 20% · 가중치 따라 바뀜"],
+    ["2차 출동 10분 넘는 인구", fmt1(k.p2) + "<small>%</small>" + dl(k.p2, b && b.p2, false), "두 번째 거점 기준"],
+  ].map(([t, v, d]) => `<div class="kpi"><div class="k">${t}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+}
+
+/* ── 읍면동 표 ── */
+let dongSort = store.get("dongSort", ["p7", 1]);
+function dongRows(A){
+  const R = D.dongs.map((d, i) => ({i, name: d.name, kind: d.kind, pop: 0, p7: 0, t: 0, tw: 0, late: 0, hiLate: 0, oldh: 0, share: d.share, n: 0}));
+  for (let i = 0; i < NB; i++) {
+    const r = R[B.d[i]], t = mins(A.a1[i]); if (!r) continue; r.n++;
+    if (isFinite(t)) { r.t += t * POP[i]; r.tw += POP[i]; if (t <= GOLD) r.p7 += POP[i]; if (t > GOLD) { r.late++; if (RISK[i] >= P80) r.hiLate++; } }
+    r.pop += POP[i]; r.oldh += OLD_HOUSE[i];
+  }
+  R.forEach(r => { r.p7 = r.pop ? r.p7 / r.pop * 100 : null; r.t = r.tw ? r.t / r.tw : null; });
+  return R;
+}
+function dongTable(){
+  const R = dongRows(CUR);
+  const [key, dir] = dongSort;
+  R.sort((a, b) => { const x = a[key], y = b[key]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  const cols = [["name", "읍면동", 0], ["pop", "인구(추정 배분)", 1], ["p7", "7분 안 도착 인구", 1], ["t", "평균 주행시간(분)", 1], ["late", "7분 넘는 건물", 1], ["hiLate", "그중 고위험", 1], ["oldh", "2012년 이전 단독주택", 1], ["share", "70세 이상 비율", 1]];
+  $("#dongtab").innerHTML = `<thead><tr>${cols.map(([k, l, r]) => `<th data-k="${k}" class="${r ? "r" : ""} ${k === key ? "sorted" : ""}">${l}</th>`).join("")}</tr></thead><tbody>` +
+    R.map(r => `<tr class="clk" data-i="${r.i}"><td>${esc(r.name)}</td><td class="r">${fmtN(r.pop)}</td>
+      <td class="r"><span class="bar" style="width:${Math.round((r.p7 || 0) * 0.6)}px;background:${(r.p7 ?? 0) < 80 ? "var(--bad)" : "var(--accent)"}"></span>${fmt1(r.p7)}%</td>
+      <td class="r">${fmt1(r.t)}</td><td class="r">${fmtN(r.late)}</td><td class="r">${fmtN(r.hiLate)}</td><td class="r">${fmtN(r.oldh)}</td><td class="r">${fmt1(r.share)}%</td></tr>`).join("") + "</tbody>";
+  $("#dongtab").querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.k; dongSort = [k, dongSort[0] === k ? -dongSort[1] : (k === "name" ? 1 : -1)]; store.set("dongSort", dongSort); dongTable(); });
+  $("#dongtab").querySelectorAll("tr.clk").forEach(tr => tr.onclick = () => {
+    const rings = D.dpoly[+tr.dataset.i]; let x0 = 999, y0 = 999, x1 = -999, y1 = -999;
+    rings.forEach(r => r.forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }));
+    map.fitBounds([[x0, y0], [x1, y1]], {padding: 30}); document.getElementById("map").scrollIntoView({behavior: "smooth", block: "center"});
+  });
+}
+
+/* ── 거점 표 ── */
+function stationTable(){
+  const sts = CUR.sts, R = sts.map(s => ({s, n: 0, pop: 0, t: 0, mx: 0, late: 0}));
+  for (let i = 0; i < NB; i++) { const k = CUR.who[i]; if (k < 0) continue; const r = R[k], t = mins(CUR.a1[i]); r.n++; r.pop += POP[i]; r.t += t * POP[i]; if (t > r.mx) r.mx = t; if (t > GOLD) r.late++; }
+  R.sort((a, b) => b.pop - a.pop);
+  $("#sttab").innerHTML = `<thead><tr><th>거점</th><th class="r">먼저 닿는 건물</th><th class="r">인구</th><th class="r">평균(분)</th><th class="r">가장 먼 곳(분)</th><th class="r">7분 넘는 건물</th></tr></thead><tbody>` +
+    R.map(r => `<tr><td>${esc(r.s.name)}${r.s.kind === "post" ? ' <span class="muted small">지역대</span>' : r.s.kind === "virt" ? ' <span class="muted small">가상</span>' : ""}</td><td class="r">${fmtN(r.n)}</td><td class="r">${fmtN(r.pop)}</td><td class="r">${fmt1(r.pop ? r.t / r.pop : null)}</td><td class="r">${fmt1(r.mx)}</td><td class="r">${fmtN(r.late)}</td></tr>`).join("") + "</tbody>";
+}
+
+/* ── 시간대 표 ── */
+function slotTable(){
+  const sts = STATIONS.filter(s => s.kind === "center" || (S.posts && s.kind === "post"));
+  const rows = D.net.slots.map(sl => { const A = arrivals(sl, sts); return [sl, kpis(A)]; });
+  const snaps = D.net.snapshots || {};
+  $("#slottab").innerHTML = `<thead><tr><th>시간대</th><th class="r">ITS 표본</th><th class="r">평균 주행시간(분, 인구가중)</th><th class="r">5분 안 인구</th><th class="r">7분 안 인구</th><th class="r">7분 넘는 건물</th><th class="r">2차 10분 넘는 인구</th></tr></thead><tbody>` +
+    rows.map(([sl, k]) => `<tr><td>${esc(SLOT_NAME[sl] || sl)}</td><td class="r">${sl === "limit" ? "—" : (snaps[sl] || []).length + "회"}</td><td class="r">${fmt1(k.avg)}</td><td class="r">${fmt1(k.p5)}%</td><td class="r">${fmt1(k.p7)}%</td><td class="r">${fmtN(k.late)}</td><td class="r">${fmt1(k.p2)}%</td></tr>`).join("") + "</tbody>";
+}
+
+/* ── 눈여겨볼 점(자동) ── */
+function findings(){
+  const R = dongRows(CUR).filter(r => r.pop > 300);
+  const worst = R.filter(r => r.p7 != null).sort((a, b) => a.p7 - b.p7).slice(0, 3);
+  const hi = R.slice().sort((a, b) => b.hiLate - a.hiLate).slice(0, 3);
+  const oldh = R.slice().sort((a, b) => b.oldh - a.oldh).slice(0, 3);
+  const k = kpis(CUR);
+  let thin = 0; for (let i = 0; i < NB; i++) { const t1 = mins(CUR.a1[i]), t2 = mins(CUR.a2[i]); if (t1 <= GOLD && t2 > 12) thin += POP[i]; }
+  const F = [
+    ["7분 안에 닿기 어려운 읍면동", `${worst.map(r => `<b>${esc(r.name)}</b> ${fmt1(r.p7)}%`).join(", ")} — 인구 중 주행 7분 안에 닿는 비율이 가장 낮습니다. 신규 지역대·펌프차 전진 배치 후보 지역입니다.`],
+    ["위험은 높은데 늦게 닿는 건물", `고위험(상위 20%)이면서 7분 넘게 걸리는 건물 ${fmtN(k.hiLate)}동 중 ${hi.map(r => `${esc(r.name)} ${fmtN(r.hiLate)}동`).join(", ")}에 많습니다. 이변량 지도의 짙은 칸이 이 건물들입니다.`],
+    ["주택용 소방시설 보급 우선 대상", `2012년 이전에 지은 단독주택(설치 의무가 생기기 전 건축)은 ${oldh.map(r => `${esc(r.name)} ${fmtN(r.oldh)}동`).join(", ")} 순으로 많습니다. 소화기·단독경보형 감지기 보급을 늦게 닿는 곳부터 하면 효과가 큽니다.`],
+    ["2차 출동이 얇은 곳", `1차는 7분 안이지만 두 번째 거점이 12분 넘게 걸리는 인구가 ${fmtN(thin)}명(${fmt1(thin / TOTPOP * 100)}%)입니다. 첫 출동대가 비었을 때 공백이 생기는 곳입니다(2차 출동 지도).`],
+  ];
+  $("#finds").innerHTML = F.map(([t, b]) => `<div class="find"><h3>${t}</h3><p>${b}</p></div>`).join("");
+}
+
+/* ── 팝업 ── */
+const USES = D.uses;
+function showBuilding(i, lngLat){
+  const t1 = mins(CUR.a1[i]), t2 = mins(CUR.a2[i]), who = CUR.sts[CUR.who[i]];
+  const u = USES[B.u[i]] ? USES[B.u[i]][0] : "용도 미상";
+  const comp = COMP.map((c, k) => `<tr><td>${COMP_NAME[k]}</td><td class="r">${c[i]}</td><td class="r muted">×${S.w[k]}</td></tr>`).join("");
+  new maplibregl.Popup({maxWidth: "300px"}).setLngLat(lngLat).setHTML(`<div class="pop"><div class="tt">${esc(u)} · ${esc(D.dongs[B.d[i]].name)}</div>
+    <table><tr><td>준공</td><td class="r">${B.yr[i] || "미상"}</td></tr><tr><td>구조</td><td class="r">${esc(STRUCTS[B.s[i]][1])}</td></tr>
+    <tr><td>지상층수</td><td class="r">${B.fl[i] || "—"}</td></tr><tr><td>연면적(㎡)</td><td class="r">${fmtN(B.a[i])}</td></tr>
+    <tr><td><b>1차 도착</b></td><td class="r"><b>${fmt1(t1)}분</b></td></tr><tr><td colspan="2" class="muted small">${esc(who ? who.name : "")}</td></tr>
+    <tr><td>2차 도착</td><td class="r">${fmt1(t2)}분</td></tr><tr><td><b>위험 점수</b></td><td class="r"><b>${fmt1(RISK[i])}</b></td></tr></table>
+    <table style="margin-top:4px">${comp}</table><div class="sub">주행시간(${esc(SLOT_NAME[S.slot])}) + 도로→건물 진입 ${Math.round(B.ac[i])}초 포함. 위험 점수는 연구진 추정.</div></div>`).addTo(map);
+}
+function showCell(ci, lngLat){
+  const c = CS[ci];
+  new maplibregl.Popup({maxWidth: "260px"}).setLngLat(lngLat).setHTML(`<div class="pop"><div class="tt">250m 격자</div><table>
+    <tr><td>건물</td><td class="r">${fmtN(c.n)}동</td></tr><tr><td>인구(추정)</td><td class="r">${fmtN(c.pop)}</td></tr>
+    <tr><td>1차 도착(중앙값)</td><td class="r">${fmt1(c.t1)}분</td></tr><tr><td>2차 도착(중앙값)</td><td class="r">${fmt1(c.t2)}분</td></tr>
+    <tr><td>위험(상위 1/4 평균)</td><td class="r">${fmt1(c.risk)}</td></tr>${S.mode === "diff" ? `<tr><td>시간대 증가</td><td class="r">${fmt1(c.diff)}분</td></tr>` : ""}</table>
+    <div class="sub">확대하면 건물별 값을 볼 수 있습니다.</div></div>`).addTo(map);
+}
+function showStation(s, A){
+  let n = 0, pop = 0; if (A) { const k = A.sts.indexOf(s); for (let i = 0; i < NB; i++) if (A.who[i] === k) { n++; pop += POP[i]; } }
+  new maplibregl.Popup({maxWidth: "260px"}).setLngLat([s.lon, s.lat]).setHTML(`<div class="pop"><div class="tt">${esc(s.name)}</div>
+    <div class="small">${esc(s.org || (s.kind === "post" ? "119지역대 · 위치 출처 OpenStreetMap" : s.kind === "virt" ? "가상 거점(시험용)" : ""))}</div>
+    <div class="small muted">${esc(s.addr && s.addr !== "OSM" ? s.addr : "")}</div>
+    <table style="margin-top:4px"><tr><td>먼저 닿는 건물</td><td class="r">${fmtN(n)}동</td></tr><tr><td>인구(추정)</td><td class="r">${fmtN(pop)}</td></tr></table></div>`).addTo(map);
+}
+let placing = false;
+map.on("click", e => {
+  if (placing) {
+    const [nd, dm] = nearestNode(e.lngLat.lng, e.lngLat.lat);
+    if (nd < 0 || dm > 1500) { alert("도로에서 너무 멉니다. 도로 가까이를 눌러 주세요."); return; }
+    virtuals.push({id: "v" + Date.now(), name: "가상 지역대 " + (virtuals.length + 1), kind: "virt", lon: NLON(nd), lat: NLAT(nd), node: nd});
+    placing = false; $("#addv").classList.remove("on"); map.getCanvas().style.cursor = "";
+    virtList(); render(); return;
+  }
+  const bf = map.queryRenderedFeatures(e.point, {layers: map.getLayoutProperty("bld", "visibility") === "visible" && map.getZoom() >= 12.5 ? ["bld"] : []});
+  if (bf.length) return showBuilding(bf[0].properties.i, e.lngLat);
+  const cf = map.queryRenderedFeatures(e.point, {layers: ["cells"]});
+  if (cf.length) showCell(cf[0].properties.i, e.lngLat);
+});
+["cells", "bld"].forEach(l => { map.on("mouseenter", l, () => { if (!placing) map.getCanvas().style.cursor = "pointer"; }); map.on("mouseleave", l, () => { if (!placing) map.getCanvas().style.cursor = ""; }); });
+
+/* ── 가상 거점 ── */
+$("#addv").onclick = () => { placing = !placing; $("#addv").classList.toggle("on", placing); map.getCanvas().style.cursor = placing ? "crosshair" : ""; };
+function virtList(){
+  $("#virt").innerHTML = virtuals.map((v, i) => `<div class="vi"><span>${esc(v.name)}</span><button data-i="${i}" type="button">지우기</button></div>`).join("") +
+    (virtuals.length ? `<div class="hint">지표 옆 초록·빨강 숫자 = 가상 거점이 없을 때와의 차이</div>` : "");
+  $("#virt").querySelectorAll("button").forEach(b => b.onclick = () => { virtuals.splice(+b.dataset.i, 1); virtList(); render(); });
+}
+
+/* ── 조작부 ── */
+function chips(){
+  $("#modes").innerHTML = MODES.map(([k, l]) => `<button class="chip" type="button" data-m="${k}" aria-pressed="${S.mode === k}">${l}</button>`).join("");
+  $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => { S.mode = b.dataset.m; store.set("mode", S.mode); chips(); render(); });
+  const ov = [["posts", "119지역대 포함(OSM)"], ["narrow", "1차로 시군도"], ["cells", "격자"], ["dongs", "읍면동 경계"]];
+  $("#overlays").innerHTML = ov.map(([k, l]) => `<button class="chip" type="button" data-o="${k}" aria-pressed="${!!S[k]}">${l}</button>`).join("");
+  $("#overlays").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.o; S[k] = !S[k]; if (k === "posts") { store.set("posts", S.posts); slotTable(); } chips(); render(); });
+}
+$("#slot").innerHTML = D.net.slots.map(s => `<option value="${s}" ${s === S.slot ? "selected" : ""}>${esc(SLOT_NAME[s] || s)}</option>`).join("");
+$("#slot").onchange = e => { S.slot = e.target.value; store.set("slot", S.slot); render(); };
+const PRESETS = [["기본", [30, 25, 20, 15, 10]], ["인명 중심", [25, 15, 15, 35, 10]], ["건물 노후 중심", [15, 40, 35, 5, 5]], ["균등", [20, 20, 20, 20, 20]]];
+function weights(){
+  $("#weights").innerHTML = COMP_NAME.map((n, k) => `<div class="wrow"><span>${n}</span><input type="range" min="0" max="50" step="5" value="${S.w[k]}" data-k="${k}" aria-label="${n} 가중치"><span class="wv">${S.w[k]}</span></div>`).join("");
+  $("#weights").querySelectorAll("input").forEach(inp => { inp.oninput = () => { inp.nextElementSibling.textContent = inp.value; }; inp.onchange = () => { S.w[+inp.dataset.k] = +inp.value; store.set("w", S.w); computeRisk(); render(); }; });
+  $("#presets").innerHTML = PRESETS.map(([n], i) => `<button class="chip" type="button" data-p="${i}">${n}</button>`).join("");
+  $("#presets").querySelectorAll("button").forEach(b => b.onclick = () => { S.w = PRESETS[+b.dataset.p][1].slice(); store.set("w", S.w); weights(); computeRisk(); render(); });
+}
+
+/* ── 자료와 방법 ── */
+function method(){
+  const n = D.net, cov = n.coverage, st = D.stat;
+  const snapTxt = Object.entries(n.snapshots || {}).map(([k, v]) => `${SLOT_NAME[k]} ${v.length}회(${v[0]}${v.length > 1 ? " ~ " + v[v.length - 1] : ""})`).join(", ") || "아직 없음";
+  const ratio = Object.entries(n.ratio || {}).map(([k, r]) => `<tr><td>${SLOT_NAME[k]}</td>${["101", "103", "104", "105", "106", "107"].map(c => `<td class="r">${r[c] != null ? r[c].toFixed(2) : "—"}</td>`).join("")}</tr>`).join("");
+  const nCenter = STATIONS.filter(s => s.kind === "center").length, nPost = STATIONS.filter(s => s.kind === "post").length;
+  const srcN = (st.src_v || 0), srcL = (st.src_l || 0), srcNone = (st.src_none || 0);
+  $("#method").innerHTML = `
+  <h4>1. 무엇을 계산했나</h4>
+  <p>세종시 건물 ${fmtN(NB)}동마다 ① 가장 가까운 119 거점에서 소방차가 도로를 따라 달려 닿는 시간(1차), ② 두 번째로 가까운 거점에서 오는 시간(2차), ③ 불이 났을 때 피해가 커질 수 있는 정도를 나타내는 위험 점수를 매겼습니다. 이 셋을 250m 격자로 모아 지도에 칠했고, 위험과 도착시간을 겹쳐 우선순위를 찾습니다.</p>
+
+  <h4>2. 도로 속도 — 단순 제한속도 대신 ITS 실측 구간 속도</h4>
+  <p><b>도로망</b>은 국가교통정보센터 <b>전국표준노드링크</b>(${esc(n.km)}km, 링크 ${fmtN(n.n_links)}개, 2026-10-14 판)에서 세종 시 경계 3km 바깥까지 잘라 썼습니다. 고속도로부터 시군도까지 들어 있고, 링크마다 방향(일방통행)·차로 수·제한속도가 있습니다.</p>
+  <p><b>속도</b>는 법정 제한속도를 그대로 쓰지 않고, 국가교통정보센터 <b>ITS 교통소통정보 API</b>(링크별 5분 단위 실측 속도)를 시간대별로 모아 붙였습니다. 수집 시각: ${esc(snapTxt)}. 같은 시간대 표본이 여러 번이면 링크별 중앙값을 씁니다.</p>
+  <p>ITS 실측이 붙은 링크는 길이 기준 ${Object.entries(cov).filter(([k]) => k !== "limit").map(([k, c]) => `${SLOT_NAME[k]} ${c.len_pct}%`).join(", ")}입니다. 실측이 없는 링크(주로 골목·시군도)는 <b>같은 시간대·같은 도로 등급에서 실측된 링크들의 ‘실제 속도 ÷ 제한속도’ 중앙값</b>을 그 링크의 제한속도에 곱해 채웠습니다. 즉 실측이 없는 길도 그 시간대 비슷한 길이 실제로 얼마나 느렸는지를 따라갑니다.</p>
+  <table class="t" style="max-width:640px"><thead><tr><th>시간대</th><th class="r">고속국도</th><th class="r">일반국도</th><th class="r">특별·광역시도</th><th class="r">국가지원지방도</th><th class="r">지방도</th><th class="r">시군도</th></tr></thead><tbody>${ratio}</tbody></table>
+  <p><b>도로망 손질</b> — ① 이 판의 표준노드링크는 교차로 하나를 진입 방향별 노드(번호 앞 8자리가 같고 끝 2자리만 다름)로 쪼개고 회전은 짧은 연결 링크로 잇는데, 연결 링크가 빠진 곳이 많아 앞 8자리가 같은 노드를 하나로 합쳤습니다(연결 링크 ${fmtN(n.n_conn)}개가 교차로 안으로 흡수, 교차로에서는 어느 방향으로든 회전·유턴 가능). ② 그래도 번호가 달라 남은 같은 교차로 노드는 ${n.join_m}m 안이면 서로 이었습니다(${fmtN(n.n_join)}쌍) — 연동면 강변길 교차로처럼 코앞에서 수 km를 돌아 나오는 경우가 있었습니다. ③ 200m 넘는 링크인데 실측 속도가 제한속도의 25%에 못 미치면 관측 이상치로 보고 버렸습니다(${Object.entries(n.outliers || {}).map(([k, v]) => SLOT_NAME[k] + " " + v + "개").join(", ") || "없음"}). 짧은 링크는 신호 대기 때문에 느린 것이 정상이라 그대로 둡니다. ④ 제한속도가 10~20km/h로 등록된 단지·둔치 도로는 30km/h로 보고 계산했습니다.</p>
+  <p class="small muted">표: 실측 속도 ÷ 제한속도 중앙값. 1보다 작으면 제한속도보다 느리게 달린다는 뜻(신호 대기 포함). 시속 8km 밑으로는 내려가지 않게 했습니다(ITS 속도 0은 ‘자료 없음’이라 뺐습니다).</p>
+  <p><b>소방차 속도에 대한 가정</b> — 긴급차량의 신호·차로 우선 효과는 넣지 않고 <b>일반 차량이 그 시간에 낸 속도</b>로 달린다고 봤습니다. 실제 소방차는 이보다 빠를 수 있어 결과는 보수적(늦게 나오는 쪽)입니다. 도로에서 건물까지 마지막 구간은 직선거리 × ${D.detour}배를 시속 ${D.access_kmh}km로 달린다고 더했습니다. <b>신고 접수·출동 지령·출동 준비 시간은 빠져 있습니다</b> — 골든타임 7분(신고~도착)을 맞추려면 주행시간은 이보다 짧아야 합니다.</p>
+
+  <h4>3. 출동 거점</h4>
+  <p>소방청 「119안전센터 주소 및 전화번호」(2026-07-01) 중 세종 ${nCenter}곳을 브이월드 주소 좌표 변환으로 지도에 올렸습니다. 119지역대 ${nPost}곳은 공식 목록에 없어 OpenStreetMap 위치를 썼고, 운영 여부를 확인하지 못해 <b>기본 계산에서는 빼고</b> ‘119지역대 포함’ 칩을 켰을 때만 넣습니다(금남면 지역대는 위치를 찾지 못했습니다). 대전·공주·청주 등 이웃 시도 소방서의 응원 출동은 넣지 않았습니다. 소방서 본서(구조대 등)는 안전센터와 같은 자리에 있거나 가까워 따로 넣지 않았습니다.</p>
+
+  <h4>4. 건물 화재위험 점수(연구진 추정)</h4>
+  <p>건물 외곽선은 브이월드 <b>GIS건물통합정보</b>(lt_c_bldginfo), 속성은 같은 자료와 국토교통부 건축HUB <b>건축물대장 표제부</b>(세종 전체)를 지번(PNU)으로 이어 붙였습니다. ${fmtN(MIN_FOOT_TXT)}㎡ 미만 외곽선(부속 창고 등) ${fmtN(st.tiny)}개는 뺐습니다. 속성 출처: 브이월드 ${fmtN(srcN)}동, 건축물대장 ${fmtN(srcL)}동, 둘 다 없음(대장 미등재·부속 건물) ${fmtN(srcNone)}동 — 없음은 각 요소를 중간값으로 둡니다.</p>
+  <table class="t" style="max-width:820px"><thead><tr><th>요소</th><th>근거</th><th>점수(0~100)</th></tr></thead><tbody>
+   <tr><td>용도</td><td>인명 피해(주거·노유자·의료·숙박)와 화재하중(공장·창고·위험물)을 함께 반영</td><td>위험물 100 · 노유자 95 · 의료 85 · 공장·숙박 80 · 창고·위락 75 · 단독주택 70 · 축사 등 65 · 판매 65 · 제2종 근생 60 · 공동주택 55 · 제1종 근생 50 · 업무 35</td></tr>
+   <tr><td>노후도</td><td>사용승인 연도. 2012년부터 신축 주택에 주택용 소방시설 설치 의무</td><td>1980 이전 100 · 1980년대 85 · 1990년대 65 · 2000~2011 40 · 2012 이후 15 · 미상 60</td></tr>
+   <tr><td>구조</td><td>불에 타는 구조·샌드위치패널은 연소 확대가 빠름</td><td>목구조 100 · 경량철골·조립식 90 · 조적 60 · 일반철골 50 · 콘크리트 15</td></tr>
+   <tr><td>거주자 취약</td><td>행정동 70세 이상 비율(주민등록 ${esc(D.pop_ym || "")})을 0~100으로 환산해 주거 건물에, 노유자시설은 100</td><td>그 밖 용도 20</td></tr>
+   <tr><td>규모·높이</td><td>고층은 사다리차 진압·피난이 어렵고, 큰 연면적은 화재하중이 큼</td><td>16층 이상 100 · 11~15층 75 · 6~10층 45 / 연면적 1만㎡ 이상 80 · 3천㎡ 55 · 1천㎡ 35</td></tr>
+  </tbody></table>
+  <p>다섯 요소의 가중 평균이 위험 점수입니다. 가중치는 정답이 없어 화면에서 바꿀 수 있게 했고, ‘고위험’은 현재 가중치에서 상위 20%입니다. <b>실제 화재 발생 이력·소방시설 설치 여부·점검 결과는 반영되지 않았습니다.</b></p>
+
+  <h4>5. 인구</h4>
+  <p>행정안전부 주민등록 행정동별 인구(${esc(D.pop_ym || "")})를 그 동 주거 건물에 세대수(대장, 없으면 연면적) 비례로 나눴습니다. 그래서 건물별 인구는 실제 거주자 수가 아니라 <b>배분 추정</b>입니다. 행정동 경계는 세종 생활권 상황판에서 OpenStreetMap 경계를 손본 25곳을 썼고, 도담동·어진동은 경계가 나뉘지 않아 합쳐 보여 줍니다.</p>
+
+  <h4>6. 격자·이변량 지도</h4>
+  <p>250m 격자마다 1·2차 도착시간은 건물 값의 중앙값, 위험은 격자 안 건물 위험 점수 상위 1/4 평균(요양시설 하나처럼 소수의 고위험 건물이 묻히지 않게)입니다. 이변량 지도는 격자 위험을 3분위, 도착시간을 5분·7분 기준으로 나눴습니다.</p>
+
+  <h4>7. 한계와 다음 단계</h4>
+  <ul>
+   <li>화재 발생 지점·출동 기록이 비공개라 모형을 실제 기록으로 검증하지 못했습니다. 세종소방본부 정보공개청구로 읍면동별 화재·출동 시간 자료를 받으면 검증·보정합니다.</li>
+   <li>소화전 위치: 소방청 「세종시 관할 서센터별 소방용수」(2021, 1,792개)는 좌표가 없고 리 단위까지만 있어 이번엔 쓰지 않았습니다. 좌표가 있는 전국소방용수시설표준데이터(API 활용신청 필요)로 수평거리 100·140m 공백 분석을 붙일 예정입니다.</li>
+   <li>‘1차로 시군도’는 표준노드링크 차로 수 1인 시군도입니다. 실제 도로 폭·불법주정차는 반영하지 못해 소방차 진입 가능 여부를 뜻하지는 않습니다.</li>
+   <li>ITS 표본이 적은 시간대는 결과가 그날 교통 상황에 좌우됩니다. 수집을 이어가며 표본을 늘립니다.</li>
+  </ul>
+  <h4>자료 목록</h4>
+  <ul>
+   <li>국가교통정보센터 전국표준노드링크(2026-10-14), ITS 교통소통정보 API(its.go.kr)</li>
+   <li>소방청 119안전센터 주소 및 전화번호(공공데이터포털 15065056, 2026-07-01) · OpenStreetMap 119지역대</li>
+   <li>브이월드 GIS건물통합정보 WFS · 주소 좌표 변환 API</li>
+   <li>국토교통부 건축HUB 건축물대장 표제부(공공데이터포털)</li>
+   <li>행정안전부 주민등록 행정동별 성·연령별 인구(${esc(D.pop_ym || "")})</li>
+   <li>OpenStreetMap 행정경계(행정동 25곳으로 정리)</li>
+  </ul>`;
+}
+const MIN_FOOT_TXT = 20;
+
+/* ── 시작 ── */
+computeRisk(); chips(); weights(); virtList(); method(); render();
+setTimeout(slotTable, 300);
+})();
+</script>
