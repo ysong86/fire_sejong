@@ -58,6 +58,13 @@ table.t th.sorted::after{content:" ▾";color:var(--accent)}
 .pop .sub{color:var(--ink3);font-size:11.5px;margin-top:4px}
 .loading{position:absolute;inset:auto 12px 12px auto;background:var(--ink);color:var(--panel);font-size:12px;padding:4px 10px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
 .loading.on{opacity:.9}
+#htip{position:fixed;z-index:9999;max-width:300px;background:var(--ink);color:var(--panel);font-size:12.5px;line-height:1.55;padding:8px 11px;border-radius:7px;
+  box-shadow:0 6px 18px rgba(0,0,0,.22);pointer-events:none;opacity:0;transition:opacity .12s;font-weight:400;text-align:left;white-space:normal}
+#htip.on{opacity:1}
+#htip b{font-weight:700}
+[data-tip]{cursor:help}
+button[data-tip],select[data-tip],input[data-tip]{cursor:pointer}
+.kpi .k[data-tip],table.t th[data-tip],.wrow span[data-tip]{text-decoration:underline dotted var(--ink3);text-underline-offset:3px}
 .find{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px}
 .find h3{font-size:14px;margin-bottom:4px}
 .find p{margin:0;color:var(--ink2);font-size:13px}
@@ -93,11 +100,11 @@ table.t th.sorted::after{content:" ▾";color:var(--accent)}
     <div class="mapbox">
       <div class="ctl">
         <span><span class="lab">지도</span><span class="chips" id="modes"></span></span>
-        <span><span class="lab">시간대</span><select id="slot"></select></span>
+        <span><span class="lab">시간대</span><select id="slot" data-tip="도로 속도를 <b>어느 시간대의 ITS 실측값</b>으로 쓸지 고릅니다. ‘제한속도’는 실측 없이 법정 제한속도로 달린다고 본 값이라, 실측과 비교하면 막힘의 영향이 드러납니다."></select></span>
       </div>
       <div class="ctl">
         <span class="chips" id="overlays"></span>
-        <button class="btn" id="addv" type="button">＋ 가상 119지역대 놓기</button>
+        <button class="btn" id="addv" type="button" data-tip="누른 뒤 지도를 누르면 <b>그 자리에 출동 거점이 새로 생겼다고 보고</b> 도착시간을 다시 계산합니다. 위쪽 지표 옆에 좋아진 만큼이 초록 숫자로 나옵니다.">＋ 가상 119지역대 놓기</button>
       </div>
       <div id="map"></div>
       <div class="loading" id="loading">계산 중…</div>
@@ -470,12 +477,12 @@ function kpiRow(){
   const k = kpis(CUR), b = virtuals.length ? kpis(BASE) : null;
   const dl = (v, bv, good, unit = "%p") => b == null ? "" : (() => { const d = v - bv; if (Math.abs(d) < 0.05) return ""; const up = good ? d > 0 : d < 0; return ` <span class="dl ${up ? "up" : "dn"}">${d > 0 ? "+" : ""}${unit === "동" ? fmtN(d) : fmt1(d)}${unit}</span>`; })();
   $("#kpis").innerHTML = [
-    ["5분 안 도착 인구", fmt1(k.p5) + "<small>%</small>" + dl(k.p5, b && b.p5, true), "주민등록 인구를 주거 건물에 나눠 계산"],
-    ["7분 안 도착 인구", fmt1(k.p7) + "<small>%</small>" + dl(k.p7, b && b.p7, true), "주행시간 7분 = 골든타임 기준선"],
-    ["7분 넘게 걸리는 건물", fmtN(k.late) + "<small>동</small>" + dl(k.late, b && b.late, false, "동"), "전체 " + fmtN(NB) + "동 중"],
-    ["그중 고위험 건물", fmtN(k.hiLate) + "<small>동</small>" + dl(k.hiLate, b && b.hiLate, false, "동"), "위험 점수 상위 20% · 가중치 따라 바뀜"],
-    ["2차 출동 10분 넘는 인구", fmt1(k.p2) + "<small>%</small>" + dl(k.p2, b && b.p2, false), "두 번째 거점 기준"],
-  ].map(([t, v, d]) => `<div class="kpi"><div class="k">${t}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+    ["5분 안 도착 인구", fmt1(k.p5) + "<small>%</small>" + dl(k.p5, b && b.p5, true), "주민등록 인구를 주거 건물에 나눠 계산", TIP.k5],
+    ["7분 안 도착 인구", fmt1(k.p7) + "<small>%</small>" + dl(k.p7, b && b.p7, true), "주행시간 7분 = 골든타임 기준선", TIP.k7],
+    ["7분 넘게 걸리는 건물", fmtN(k.late) + "<small>동</small>" + dl(k.late, b && b.late, false, "동"), "전체 " + fmtN(NB) + "동 중", TIP.late],
+    ["그중 고위험 건물", fmtN(k.hiLate) + "<small>동</small>" + dl(k.hiLate, b && b.hiLate, false, "동"), "위험 점수 상위 20% · 가중치 따라 바뀜", TIP.hiLate],
+    ["2차 출동 10분 넘는 인구", fmt1(k.p2) + "<small>%</small>" + dl(k.p2, b && b.p2, false), "두 번째 거점 기준", TIP.p2],
+  ].map(([t, v, d, tip]) => `<div class="kpi"><div class="k" data-tip="${esc(tip)}" tabindex="0">${t}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
 }
 
 /* ── 읍면동 표 ── */
@@ -494,8 +501,8 @@ function dongTable(){
   const R = dongRows(CUR);
   const [key, dir] = dongSort;
   R.sort((a, b) => { const x = a[key], y = b[key]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
-  const cols = [["name", "읍면동", 0], ["pop", "인구(추정 배분)", 1], ["p7", "7분 안 도착 인구", 1], ["t", "평균 주행시간(분)", 1], ["late", "7분 넘는 건물", 1], ["hiLate", "그중 고위험", 1], ["oldh", "2012년 이전 단독주택", 1], ["share", "70세 이상 비율", 1]];
-  $("#dongtab").innerHTML = `<thead><tr>${cols.map(([k, l, r]) => `<th data-k="${k}" class="${r ? "r" : ""} ${k === key ? "sorted" : ""}">${l}</th>`).join("")}</tr></thead><tbody>` +
+  const cols = [["name", "읍면동", 0, "행정동 25곳(도담·어진동은 경계가 나뉘지 않아 합침)"], ["pop", "인구(추정 배분)", 1, TIP.pop], ["p7", "7분 안 도착 인구", 1, TIP.k7], ["t", "평균 주행시간(분)", 1, "1차 거점에서의 주행시간을 <b>인구로 가중 평균</b>한 값입니다. 사람이 많이 사는 건물의 시간이 더 크게 반영됩니다."], ["late", "7분 넘는 건물", 1, TIP.late], ["hiLate", "그중 고위험", 1, TIP.hiLate], ["oldh", "2012년 이전 단독주택", 1, "신축 주택에 <b>주택용 소방시설(소화기·단독경보형 감지기) 설치가 의무화되기 전(2012년)</b>에 지은 단독주택 수. 보급 사업의 우선 대상입니다."], ["share", "70세 이상 비율", 1, "주민등록 인구 중 70세 이상 비율. 거주자 취약 점수의 근거입니다."]];
+  $("#dongtab").innerHTML = `<thead><tr>${cols.map(([k, l, r, tip]) => `<th data-k="${k}" data-tip="${esc(tip)}" class="${r ? "r" : ""} ${k === key ? "sorted" : ""}">${l}</th>`).join("")}</tr></thead><tbody>` +
     R.map(r => `<tr class="clk" data-i="${r.i}"><td>${esc(r.name)}</td><td class="r">${fmtN(r.pop)}</td>
       <td class="r"><span class="bar" style="width:${Math.round((r.p7 || 0) * 0.6)}px;background:${(r.p7 ?? 0) < 80 ? "var(--bad)" : "var(--accent)"}"></span>${fmt1(r.p7)}%</td>
       <td class="r">${fmt1(r.t)}</td><td class="r">${fmtN(r.late)}</td><td class="r">${fmtN(r.hiLate)}</td><td class="r">${fmtN(r.oldh)}</td><td class="r">${fmt1(r.share)}%</td></tr>`).join("") + "</tbody>";
@@ -512,7 +519,7 @@ function stationTable(){
   const sts = CUR.sts, R = sts.map(s => ({s, n: 0, pop: 0, t: 0, mx: 0, late: 0}));
   for (let i = 0; i < NB; i++) { const k = CUR.who[i]; if (k < 0) continue; const r = R[k], t = mins(CUR.a1[i]); r.n++; r.pop += POP[i]; r.t += t * POP[i]; if (t > r.mx) r.mx = t; if (t > GOLD) r.late++; }
   R.sort((a, b) => b.pop - a.pop);
-  $("#sttab").innerHTML = `<thead><tr><th>거점</th><th class="r">먼저 닿는 건물</th><th class="r">인구</th><th class="r">평균(분)</th><th class="r">가장 먼 곳(분)</th><th class="r">7분 넘는 건물</th></tr></thead><tbody>` +
+  $("#sttab").innerHTML = `<thead><tr><th data-tip="119안전센터(칩을 켜면 지역대, 가상 거점 포함)">거점</th><th class="r" data-tip="이 거점이 <b>가장 먼저 닿는</b> 건물 수. 공식 관할 구역이 아니라 도로상 최단시간으로 나눈 것입니다.">먼저 닿는 건물</th><th class="r" data-tip="${esc(TIP.pop)}">인구</th><th class="r" data-tip="담당 건물까지 주행시간의 인구 가중 평균">평균(분)</th><th class="r" data-tip="담당 건물 중 가장 오래 걸리는 곳의 주행시간">가장 먼 곳(분)</th><th class="r" data-tip="${esc(TIP.late)}">7분 넘는 건물</th></tr></thead><tbody>` +
     R.map(r => `<tr><td>${esc(r.s.name)}${r.s.kind === "post" ? ' <span class="muted small">지역대</span>' : r.s.kind === "virt" ? ' <span class="muted small">가상</span>' : ""}</td><td class="r">${fmtN(r.n)}</td><td class="r">${fmtN(r.pop)}</td><td class="r">${fmt1(r.pop ? r.t / r.pop : null)}</td><td class="r">${fmt1(r.mx)}</td><td class="r">${fmtN(r.late)}</td></tr>`).join("") + "</tbody>";
 }
 
@@ -521,7 +528,7 @@ function slotTable(){
   const sts = STATIONS.filter(s => s.kind === "center" || (S.posts && s.kind === "post"));
   const rows = D.net.slots.map(sl => { const A = arrivals(sl, sts); return [sl, kpis(A)]; });
   const snaps = D.net.snapshots || {};
-  $("#slottab").innerHTML = `<thead><tr><th>시간대</th><th class="r">ITS 표본</th><th class="r">평균 주행시간(분, 인구가중)</th><th class="r">5분 안 인구</th><th class="r">7분 안 인구</th><th class="r">7분 넘는 건물</th><th class="r">2차 10분 넘는 인구</th></tr></thead><tbody>` +
+  $("#slottab").innerHTML = `<thead><tr><th data-tip="ITS 속도를 모은 시간대. ‘제한속도’는 실측 없이 법정 제한속도로 달린다고 본 비교 기준입니다.">시간대</th><th class="r" data-tip="그 시간대에 ITS 속도를 받은 횟수. 여러 번이면 링크별 중앙값을 씁니다. 적을수록 그날 교통에 좌우됩니다.">ITS 표본</th><th class="r" data-tip="1차 거점 주행시간의 인구 가중 평균">평균 주행시간(분, 인구가중)</th><th class="r" data-tip="${esc(TIP.k5)}">5분 안 인구</th><th class="r" data-tip="${esc(TIP.k7)}">7분 안 인구</th><th class="r" data-tip="${esc(TIP.late)}">7분 넘는 건물</th><th class="r" data-tip="${esc(TIP.p2)}">2차 10분 넘는 인구</th></tr></thead><tbody>` +
     rows.map(([sl, k]) => `<tr><td>${esc(SLOT_NAME[sl] || sl)}</td><td class="r">${sl === "limit" ? "—" : (snaps[sl] || []).length + "회"}</td><td class="r">${fmt1(k.avg)}</td><td class="r">${fmt1(k.p5)}%</td><td class="r">${fmt1(k.p7)}%</td><td class="r">${fmtN(k.late)}</td><td class="r">${fmt1(k.p2)}%</td></tr>`).join("") + "</tbody>";
 }
 
@@ -594,21 +601,61 @@ function virtList(){
   $("#virt").querySelectorAll("button").forEach(b => b.onclick = () => { virtuals.splice(+b.dataset.i, 1); virtList(); render(); });
 }
 
+/* ── 마우스를 올리면 뜨는 설명 ── */
+const TIP = {
+  m_arrive: "<b>1차 도착시간</b> — 가장 가까운 119 거점에서 소방차가 도로를 따라 달려 닿는 시간(주행시간)입니다. 신고 접수·출동 준비 시간은 빠져 있습니다.",
+  m_second: "<b>2차 출동</b> — 가장 가까운 거점이 다른 현장에 나가 비었을 때, <b>두 번째로 가까운 거점</b>에서 오는 시간입니다. 큰 불에 두 번째 부대가 합류하는 시간이기도 합니다. 1차는 빠른데 2차가 늦은 곳은 ‘얇은 커버’ 지역입니다.",
+  m_risk: "<b>건물 화재위험</b> — 불이 났을 때 피해가 커질 수 있는 정도를 용도·노후도·구조·거주자·규모로 매긴 <b>연구진 추정 점수</b>입니다. 실제 화재 이력이 아닙니다.",
+  m_biv: "<b>위험 × 도달</b> — 위험과 1차 도착시간을 한 색으로 겹친 지도입니다. <b>빨간 테두리</b> = 위험 상위 1/3이면서 7분 넘게 걸리는 칸(우선 대상).",
+  m_diff: "<b>시간대 차이</b> — 같은 거점이라도 길이 막히는 시간대에는 늦어집니다. 고른 시간대가 심야(막힘 없을 때)보다 몇 분 더 걸리는지 보여 줍니다.",
+  o_posts: "OpenStreetMap에 있는 <b>119지역대</b> 5곳을 출동 거점에 더합니다. 공식 목록에 없어 운영 여부를 확인하지 못해 기본 계산에서는 뺐습니다.",
+  o_narrow: "표준노드링크에서 <b>차로가 1개인 시군도</b>입니다. 교행·소방차 진입이 어려울 수 있는 길이지만 실제 폭·주차는 반영하지 못했습니다.",
+  o_cells: "250m 격자 색칠을 켜고 끕니다. 끄면 확대했을 때 건물 점만 보입니다.",
+  o_dongs: "행정동 경계선을 켜고 끕니다.",
+  k5: "주행 <b>5분 안</b>에 1차 출동대가 닿는 주민 비율입니다. 행정동 인구를 주거 건물에 세대수 비례로 나눠 셌습니다.",
+  k7: "<b>골든타임 7분</b>(신고~도착)을 주행시간 기준선으로 썼습니다. 출동 준비 시간이 빠져 있다는 점에 유의하세요.",
+  late: "1차 주행시간이 <b>7분을 넘는 건물</b> 수입니다(20㎡ 미만 부속 건물 제외).",
+  hiLate: "7분 넘는 건물 중 위험 점수 <b>상위 20%</b>인 건물입니다. 오른쪽 가중치를 바꾸면 달라집니다.",
+  p2: "<b>두 번째로 가까운 거점</b>에서 10분 넘게 걸리는 주민 비율입니다. 가까운 센터가 비었을 때의 공백을 봅니다.",
+  pop: "건물별 인구는 실제 거주자 수가 아니라, 행정동 주민등록 인구를 주거 건물에 세대수(없으면 연면적) 비례로 <b>나눠 배정한 추정치</b>입니다.",
+  w: ["위험물·노유자·의료·공장·숙박처럼 <b>인명 피해나 화재하중이 큰 용도</b>일수록 높습니다.",
+      "사용승인 연도가 오래될수록 높습니다. 2012년부터 신축 주택에 주택용 소방시설 설치가 의무화됐습니다.",
+      "목구조·경량철골(샌드위치패널)처럼 <b>불이 빨리 번지는 구조</b>일수록 높고, 콘크리트는 낮습니다.",
+      "주거 건물은 행정동 70세 이상 비율로, 노유자시설은 최고점으로 매깁니다. 대피가 어려운 사람이 많을수록 높습니다.",
+      "고층(사다리차 진압·피난이 어려움)이나 연면적이 큰 건물(화재하중이 큼)일수록 높습니다."],
+};
+(function(){
+  const tip = document.createElement("div"); tip.id = "htip"; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
+  let cur = null;
+  const show = el => {
+    cur = el; tip.innerHTML = el.dataset.tip; tip.classList.add("on");
+    const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = Math.min(Math.max(8, r.left), innerWidth - tw - 8), y = r.bottom + 8;
+    if (y + th > innerHeight - 8) y = r.top - th - 8;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  };
+  const hide = () => { cur = null; tip.classList.remove("on"); };
+  document.addEventListener("mouseover", e => { const el = e.target.closest("[data-tip]"); if (el && el !== cur) show(el); else if (!el && cur) hide(); });
+  document.addEventListener("focusin", e => { const el = e.target.closest("[data-tip]"); el ? show(el) : hide(); });
+  document.addEventListener("focusout", hide);
+  addEventListener("scroll", hide, {passive: true});
+})();
+
 /* ── 조작부 ── */
 function chips(){
-  $("#modes").innerHTML = MODES.map(([k, l]) => `<button class="chip" type="button" data-m="${k}" aria-pressed="${S.mode === k}">${l}</button>`).join("");
+  $("#modes").innerHTML = MODES.map(([k, l]) => `<button class="chip" type="button" data-m="${k}" data-tip="${esc(TIP["m_" + k])}" aria-pressed="${S.mode === k}">${l}</button>`).join("");
   $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => { S.mode = b.dataset.m; store.set("mode", S.mode); chips(); render(); });
   const ov = [["posts", "119지역대 포함(OSM)"], ["narrow", "1차로 시군도"], ["cells", "격자"], ["dongs", "읍면동 경계"]];
-  $("#overlays").innerHTML = ov.map(([k, l]) => `<button class="chip" type="button" data-o="${k}" aria-pressed="${!!S[k]}">${l}</button>`).join("");
+  $("#overlays").innerHTML = ov.map(([k, l]) => `<button class="chip" type="button" data-o="${k}" data-tip="${esc(TIP["o_" + k])}" aria-pressed="${!!S[k]}">${l}</button>`).join("");
   $("#overlays").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.o; S[k] = !S[k]; if (k === "posts") { store.set("posts", S.posts); slotTable(); } chips(); render(); });
 }
 $("#slot").innerHTML = D.net.slots.map(s => `<option value="${s}" ${s === S.slot ? "selected" : ""}>${esc(SLOT_NAME[s] || s)}</option>`).join("");
 $("#slot").onchange = e => { S.slot = e.target.value; store.set("slot", S.slot); render(); };
 const PRESETS = [["기본", [30, 25, 20, 15, 10]], ["인명 중심", [25, 15, 15, 35, 10]], ["건물 노후 중심", [15, 40, 35, 5, 5]], ["균등", [20, 20, 20, 20, 20]]];
 function weights(){
-  $("#weights").innerHTML = COMP_NAME.map((n, k) => `<div class="wrow"><span>${n}</span><input type="range" min="0" max="50" step="5" value="${S.w[k]}" data-k="${k}" aria-label="${n} 가중치"><span class="wv">${S.w[k]}</span></div>`).join("");
+  $("#weights").innerHTML = COMP_NAME.map((n, k) => `<div class="wrow"><span data-tip="${esc(TIP.w[k])}" tabindex="0">${n}</span><input type="range" min="0" max="50" step="5" value="${S.w[k]}" data-k="${k}" aria-label="${n} 가중치"><span class="wv">${S.w[k]}</span></div>`).join("");
   $("#weights").querySelectorAll("input").forEach(inp => { inp.oninput = () => { inp.nextElementSibling.textContent = inp.value; }; inp.onchange = () => { S.w[+inp.dataset.k] = +inp.value; store.set("w", S.w); computeRisk(); render(); }; });
-  $("#presets").innerHTML = PRESETS.map(([n], i) => `<button class="chip" type="button" data-p="${i}">${n}</button>`).join("");
+  $("#presets").innerHTML = PRESETS.map(([n, w], i) => `<button class="chip" type="button" data-p="${i}" data-tip="${esc(n + " — 용도 " + w[0] + " · 노후도 " + w[1] + " · 구조 " + w[2] + " · 거주자 " + w[3] + " · 규모 " + w[4])}">${n}</button>`).join("");
   $("#presets").querySelectorAll("button").forEach(b => b.onclick = () => { S.w = PRESETS[+b.dataset.p][1].slice(); store.set("w", S.w); weights(); computeRisk(); render(); });
 }
 
