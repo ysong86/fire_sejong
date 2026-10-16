@@ -20,7 +20,7 @@ C:\Python313\python.exe build.py                     # → dashboard.html (평�
 ```
 C:\Python313\python.exe tools\make_video.py        # 42초 미리보기(수치 흐림) → site/preview.mp4 (sejong-fire 서버 8772 필요)
 C:\Python313\python.exe ..\sejong_livingzone\tools\encrypt_page.py dashboard.html site/index.html "세종 화재안전 상황판" --video preview.mp4 --contact "송양호(ysong@sri.re.kr)" --hits "https://hits.sh/ysong86.github.io/fire_sejong.svg?view=today-total&style=flat-square&label=%EC%A1%B0%ED%9A%8C%EC%88%98&color=1d5c7c&labelColor=64748b" --nav fire
-sed -i 's/▶ 30초 미리보기/▶ 40초 미리보기/' site/index.html   # 문 버튼 문구가 공용 도구에 30초로 박혀 있다
+C:\Python313\python.exe tools\gate_fix.py site/index.html   # 공용 문을 화재용으로: 도시안전연구센터 제작 표기·문구, 40초 미리보기
 ```
 → gh-pages 에 site/index.html + preview.mp4 + .nojekyll 한 커밋. **dashboard.html(평문)·data/·docs/ 는 올리지 않는다.**
 

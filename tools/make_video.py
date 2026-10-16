@@ -221,7 +221,7 @@ def main():
         cap("쓴 자료와 가정을 모두 밝혔습니다", "ITS 속도 반영·도로망 손질·위험 점수 기준")
         scroll_to("#method", 900, 90)
         hold(1600)
-        cap("연구모임 내부 검토용", "비밀번호 문의: 송양호(ysong@sri.re.kr)")
+        cap("도시안전연구센터 내부 검토용", "비밀번호 문의: 송양호(ysong@sri.re.kr)")
         hold(2000)
 
         end = time.time() - t_open
