@@ -261,7 +261,7 @@ def its_slots(net_ids):
         h = t.hour if t.hour >= 6 else t.hour + 24
         sk = next((k for k, _, r in SLOTS if r and h in r), "day")
         snaps[sk].append(d["speeds"])
-        meta[sk].append(t.strftime("%m-%d %H:%M"))
+        meta[sk].append(t.strftime("%m-%d") + "(" + "월화수목금토일"[t.weekday()] + ") " + t.strftime("%H:%M"))   # 요일: 주말 표본은 평일 출퇴근을 대표하지 못한다
     out = {}
     for sk, lst in snaps.items():
         sp = {}

@@ -238,7 +238,7 @@ const STATIONS = D.stations.map((s, i) => ({...s, id: "s" + i}));
 const virtuals = [];
 const S = {
   mode: store.get("mode", "arrive"),
-  slot: D.net.slots.includes(store.get("slot", "")) ? store.get("slot") : (D.net.slots.find(s => s !== "limit") || "limit"),
+  slot: D.net.slots.includes(store.get("slot", "")) ? store.get("slot") : (["am", "pm", "day", "night"].find(s => D.net.slots.includes(s)) || "limit"),
   posts: store.get("posts", false), cells: true, narrow: false, dongs: true, stations: true,
   w: store.get("w", [30, 25, 20, 15, 10]),
 };
@@ -524,12 +524,13 @@ function stationTable(){
 }
 
 /* ── 시간대 표 ── */
+const days = arr => { const d = [...new Set((arr || []).map(x => x.slice(0, 8)))]; return d.length ? ' <span class="muted small">' + d.join(", ") + "</span>" : ""; };
 function slotTable(){
   const sts = STATIONS.filter(s => s.kind === "center" || (S.posts && s.kind === "post"));
   const rows = D.net.slots.map(sl => { const A = arrivals(sl, sts); return [sl, kpis(A)]; });
   const snaps = D.net.snapshots || {};
   $("#slottab").innerHTML = `<thead><tr><th data-tip="ITS 속도를 모은 시간대. ‘제한속도’는 실측 없이 법정 제한속도로 달린다고 본 비교 기준입니다.">시간대</th><th class="r" data-tip="그 시간대에 ITS 속도를 받은 횟수. 여러 번이면 링크별 중앙값을 씁니다. 적을수록 그날 교통에 좌우됩니다.">ITS 표본</th><th class="r" data-tip="1차 거점 주행시간의 인구 가중 평균">평균 주행시간(분, 인구가중)</th><th class="r" data-tip="${esc(TIP.k5)}">5분 안 인구</th><th class="r" data-tip="${esc(TIP.k7)}">7분 안 인구</th><th class="r" data-tip="${esc(TIP.late)}">7분 넘는 건물</th><th class="r" data-tip="${esc(TIP.p2)}">2차 10분 넘는 인구</th></tr></thead><tbody>` +
-    rows.map(([sl, k]) => `<tr><td>${esc(SLOT_NAME[sl] || sl)}</td><td class="r">${sl === "limit" ? "—" : (snaps[sl] || []).length + "회"}</td><td class="r">${fmt1(k.avg)}</td><td class="r">${fmt1(k.p5)}%</td><td class="r">${fmt1(k.p7)}%</td><td class="r">${fmtN(k.late)}</td><td class="r">${fmt1(k.p2)}%</td></tr>`).join("") + "</tbody>";
+    rows.map(([sl, k]) => `<tr><td>${esc(SLOT_NAME[sl] || sl)}</td><td class="r">${sl === "limit" ? "—" : (snaps[sl] || []).length + "회" + days(snaps[sl])}</td><td class="r">${fmt1(k.avg)}</td><td class="r">${fmt1(k.p5)}%</td><td class="r">${fmt1(k.p7)}%</td><td class="r">${fmtN(k.late)}</td><td class="r">${fmt1(k.p2)}%</td></tr>`).join("") + "</tbody>";
 }
 
 /* ── 눈여겨볼 점(자동) ── */
@@ -704,7 +705,7 @@ function method(){
    <li>화재 발생 지점·출동 기록이 비공개라 모형을 실제 기록으로 검증하지 못했습니다. 세종소방본부 정보공개청구로 읍면동별 화재·출동 시간 자료를 받으면 검증·보정합니다.</li>
    <li>소화전 위치: 소방청 「세종시 관할 서센터별 소방용수」(2021, 1,792개)는 좌표가 없고 리 단위까지만 있어 이번엔 쓰지 않았습니다. 좌표가 있는 전국소방용수시설표준데이터(API 활용신청 필요)로 수평거리 100·140m 공백 분석을 붙일 예정입니다.</li>
    <li>‘1차로 시군도’는 표준노드링크 차로 수 1인 시군도입니다. 실제 도로 폭·불법주정차는 반영하지 못해 소방차 진입 가능 여부를 뜻하지는 않습니다.</li>
-   <li>ITS 표본이 적은 시간대는 결과가 그날 교통 상황에 좌우됩니다. 수집을 이어가며 표본을 늘립니다.</li>
+   <li>ITS 표본이 적은 시간대는 결과가 그날 교통 상황에 좌우됩니다. 특히 지금 ‘출근’ 표본은 <b>${esc(weekendNote())}</b> 평일 출퇴근 정체를 대표하지 못할 수 있습니다. 평일 표본을 계속 모아 갱신합니다(시간대 비교 표에 수집 날짜·요일을 적어 두었습니다).</li>
   </ul>
   <h4>자료 목록</h4>
   <ul>
@@ -717,6 +718,8 @@ function method(){
   </ul>`;
 }
 const MIN_FOOT_TXT = 20;
+function weekendNote(){ const a = (D.net.snapshots || {}).am || []; const we = a.filter(x => /\((토|일)\)/.test(x)).length;
+  return !a.length ? "아직 없어" : we === a.length ? "모두 주말(" + [...new Set(a.map(x => x.slice(0, 8)))].join(", ") + ")에 모은 것이라" : we ? "일부가 주말에 모은 것이라" : "평일에 모은 것이지만 횟수가 적어"; }
 
 /* ── 시작 ── */
 computeRisk(); chips(); weights(); virtList(); method(); render();
