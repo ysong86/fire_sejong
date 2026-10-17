@@ -705,7 +705,7 @@ function method(){
    <li>화재 발생 지점·출동 기록이 비공개라 모형을 실제 기록으로 검증하지 못했습니다. 세종소방본부 정보공개청구로 읍면동별 화재·출동 시간 자료를 받으면 검증·보정합니다.</li>
    <li>소화전 위치: 소방청 「세종시 관할 서센터별 소방용수」(2021, 1,792개)는 좌표가 없고 리 단위까지만 있어 이번엔 쓰지 않았습니다. 좌표가 있는 전국소방용수시설표준데이터(API 활용신청 필요)로 수평거리 100·140m 공백 분석을 붙일 예정입니다.</li>
    <li>‘1차로 시군도’는 표준노드링크 차로 수 1인 시군도입니다. 실제 도로 폭·불법주정차는 반영하지 못해 소방차 진입 가능 여부를 뜻하지는 않습니다.</li>
-   <li>ITS 표본이 적은 시간대는 결과가 그날 교통 상황에 좌우됩니다. 특히 지금 ‘출근’ 표본은 <b>${esc(weekendNote())}</b> 평일 출퇴근 정체를 대표하지 못할 수 있습니다. 평일 표본을 계속 모아 갱신합니다(시간대 비교 표에 수집 날짜·요일을 적어 두었습니다).</li>
+   <li>ITS 표본이 적은 시간대는 결과가 그날 교통 상황에 좌우됩니다. ${weekendNote()} 출퇴근 시간대는 평일 표본이 있으면 평일 것만 쓰고, 주말의 같은 시각 표본은 평시로 돌립니다(시간대 비교 표에 수집 날짜·요일을 적어 두었습니다).</li>
   </ul>
   <h4>자료 목록</h4>
   <ul>
@@ -718,8 +718,16 @@ function method(){
   </ul>`;
 }
 const MIN_FOOT_TXT = 20;
-function weekendNote(){ const a = (D.net.snapshots || {}).am || []; const we = a.filter(x => /\((토|일)\)/.test(x)).length;
-  return !a.length ? "아직 없어" : we === a.length ? "모두 주말(" + [...new Set(a.map(x => x.slice(0, 8)))].join(", ") + ")에 모은 것이라" : we ? "일부가 주말에 모은 것이라" : "평일에 모은 것이지만 횟수가 적어"; }
+function weekendNote(){
+  const sn = D.net.snapshots || {}, out = [];
+  [["am", "출근"], ["pm", "퇴근"]].forEach(([k, n]) => {
+    const a = sn[k] || [], we = a.filter(x => /\((토|일)\)/.test(x)).length;
+    if (!a.length) out.push(`‘${n}’ 표본은 아직 없습니다.`);
+    else if (we === a.length) out.push(`‘${n}’ 표본은 <b>모두 주말(${[...new Set(a.map(x => x.slice(0, 8)))].join(", ")})에 모은 것</b>이라 평일 정체를 대표하지 못할 수 있습니다.`);
+    else out.push(`‘${n}’ 표본은 평일 ${a.length}회(${[...new Set(a.map(x => x.slice(0, 8)))].join(", ")})입니다.`);
+  });
+  return out.join(" ");
+}
 
 /* ── 시작 ── */
 computeRisk(); chips(); weights(); virtList(); method(); render();

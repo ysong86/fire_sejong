@@ -254,12 +254,19 @@ def buildings(dongs, dp):
 def its_slots(net_ids):
     snaps = defaultdict(list)
     meta = defaultdict(list)
+    rows = []
     for fn in sorted(glob.glob(os.path.join(RAW, "its", "*.json"))):
         d = load(fn)
         c = d.get("created") or os.path.basename(fn).replace("_", "")
         t = dt.datetime.strptime(c[:12], "%Y%m%d%H%M")
         h = t.hour if t.hour >= 6 else t.hour + 24
         sk = next((k for k, _, r in SLOTS if r and h in r), "day")
+        rows.append((sk, t, d))
+    # 출퇴근은 평일 표본이 있으면 평일만 — 주말 같은 시각 표본은 막힘이 적어 평시로 돌린다
+    wd = {sk for sk, t, _ in rows if t.weekday() < 5}
+    for sk, t, d in rows:
+        if sk in ("am", "pm") and t.weekday() >= 5 and sk in wd:
+            sk = "day"
         snaps[sk].append(d["speeds"])
         meta[sk].append(t.strftime("%m-%d") + "(" + "월화수목금토일"[t.weekday()] + ") " + t.strftime("%H:%M"))   # 요일: 주말 표본은 평일 출퇴근을 대표하지 못한다
     out = {}
