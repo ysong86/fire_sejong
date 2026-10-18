@@ -18,9 +18,15 @@ FIX = [
     ('<span class="aside">연구원의 공식 업무가 아닌, 참여 연구자들의 호기심과 재미에서 시작한 작업입니다. 결과물은 참고용으로 봐 주세요.</span>', ""),
     ('제작: 세종연구원 연구모임<span class="names">김성표, 안용준, 김흥주, 남영식, 이재민, 이자은, 송양호</span>',
      f'제작: {ORG}<span class="names">{MEMBERS}</span>'),
-    ("▶ 30초 미리보기", "▶ 40초 미리보기"),
     ("</head>", "<style>.foot .names{white-space:normal!important}</style></head>"),
 ]
+# 미리보기 길이 — 공용 문이 2026-10-18 '30초' 꼬리표(.pt)로 바뀌었다. 옛 문 글자도 받는다.
+for a, b in (('<span class="pt">30초</span>', '<span class="pt">40초</span>'), ("▶ 30초 미리보기", "▶ 40초 미리보기")):
+    if a in s:
+        s = s.replace(a, b, 1)
+        break
+else:
+    raise SystemExit("문 구조가 바뀌었습니다 — 미리보기 길이 표시를 못 찾음")
 for a, b in FIX:
     if a not in s:
         raise SystemExit("문 구조가 바뀌었습니다 — 못 찾음: " + a[:40])
